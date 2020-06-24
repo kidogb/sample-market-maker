@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from time import sleep
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from os.path import getmtime
 import random
 import requests
@@ -470,9 +470,32 @@ class OrderManager:
             logger.info("Current Position: %.f, Minimum Position: %.f" %
                         (self.exchange.get_delta(), settings.MIN_POSITION))
 
+    def fetch_ticker(self):
+        """Perform checks before placing orders."""
+
+        # Check if OB is empty - if so, can't quote.
+        self.exchange.check_if_orderbook_empty()
+
+        # Ensure market is still open.
+        self.exchange.check_market_open()
+
+        # Get ticker, which sets price offsets and prints some debugging info.
+        ticker = self.get_ticker()
+        return ticker
+
     ###
     # Running
     ###
+    def wait_to_next_round_time(self):
+        delta = timedelta(minutes=2)
+        now = datetime.now()
+        print(now)
+        next_minute = (now + delta).replace(microsecond=0, second=0)
+        wait_seconds = (next_minute - now).seconds
+        print(next_minute)
+        print(wait_seconds)
+        print(now)
+        return wait_seconds
 
     def check_file_change(self):
         """Restart if any files we're watching have changed."""
@@ -509,10 +532,10 @@ class OrderManager:
             if not self.check_connection():
                 logger.error("Realtime data connection unexpectedly closed, restarting.")
                 self.restart()
-
-            self.sanity_check()  # Ensures health of mm - several cut-out points here
-            self.print_status()  # Print skew, delta, etc
-            self.place_orders()  # Creates desired orders and converges to existing orders
+            self.fetch_ticker()
+            # self.sanity_check()  # Ensures health of mm - several cut-out points here
+            # self.print_status()  # Print skew, delta, etc
+            # self.place_orders()  # Creates desired orders and converges to existing orders
 
     def restart(self):
         logger.info("Restarting the market maker...")
