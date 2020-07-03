@@ -121,3 +121,6 @@ WATCHED_FILES = [join('market_maker', 'market_maker.py'), join('market_maker', '
 
 # Specify the contracts that you hold. These will be used in portfolio calculations.
 CONTRACTS = ['XBTUSD']
+
+# Telegram bot
+TELEGRAM_TOKEN = "1375720857:AAG7QlWP9eRTnWriPFUBambTrApKXuxcG_E"

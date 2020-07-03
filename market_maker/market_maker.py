@@ -11,11 +11,13 @@ import signal
 from market_maker import bitmex
 from market_maker.settings import settings
 from market_maker.utils import log, constants, errors, math
+import pandas as pd
+from .strategy import StrategyManager
 
 # Used for reloading the bot - saves modified times of key files
 import os
-watched_files_mtimes = [(f, getmtime(f)) for f in settings.WATCHED_FILES]
 
+watched_files_mtimes = [(f, getmtime(f)) for f in settings.WATCHED_FILES]
 
 #
 # Helpers
@@ -145,16 +147,16 @@ class ExchangeInterface:
     def get_highest_buy(self):
         buys = [o for o in self.get_orders() if o['side'] == 'Buy']
         if not len(buys):
-            return {'price': -2**32}
+            return {'price': -2 ** 32}
         highest_buy = max(buys or [], key=lambda o: o['price'])
-        return highest_buy if highest_buy else {'price': -2**32}
+        return highest_buy if highest_buy else {'price': -2 ** 32}
 
     def get_lowest_sell(self):
         sells = [o for o in self.get_orders() if o['side'] == 'Sell']
         if not len(sells):
-            return {'price': 2**32}
+            return {'price': 2 ** 32}
         lowest_sell = min(sells or [], key=lambda o: o['price'])
-        return lowest_sell if lowest_sell else {'price': 2**32}  # ought to be enough for anyone
+        return lowest_sell if lowest_sell else {'price': 2 ** 32}  # ought to be enough for anyone
 
     def get_position(self, symbol=None):
         if symbol is None:
@@ -213,6 +215,7 @@ class OrderManager:
         else:
             logger.info("Order Manager initializing, connecting to BitMEX. Live run: executing real trades.")
 
+        self.strategy = StrategyManager(settings.DRY_RUN)
         self.start_time = datetime.now()
         self.instrument = self.exchange.get_instrument()
         self.starting_qty = self.exchange.get_delta()
@@ -276,9 +279,9 @@ class OrderManager:
             "%s Ticker: Buy: %.*f, Sell: %.*f" %
             (self.instrument['symbol'], tickLog, ticker["buy"], tickLog, ticker["sell"])
         )
-        logger.info('Start Positions: Buy: %.*f, Sell: %.*f, Mid: %.*f' %
-                    (tickLog, self.start_position_buy, tickLog, self.start_position_sell,
-                     tickLog, self.start_position_mid))
+        # logger.info('Start Positions: Buy: %.*f, Sell: %.*f, Mid: %.*f' %
+        #             (tickLog, self.start_position_buy, tickLog, self.start_position_sell,
+        #              tickLog, self.start_position_mid))
         return ticker
 
     def get_price_offset(self, index):
@@ -365,8 +368,9 @@ class OrderManager:
                         # If price has changed, and the change is more than our RELIST_INTERVAL, amend.
                         desired_order['price'] != order['price'] and
                         abs((desired_order['price'] / order['price']) - 1) > settings.RELIST_INTERVAL):
-                    to_amend.append({'orderID': order['orderID'], 'orderQty': order['cumQty'] + desired_order['orderQty'],
-                                     'price': desired_order['price'], 'side': order['side']})
+                    to_amend.append(
+                        {'orderID': order['orderID'], 'orderQty': order['cumQty'] + desired_order['orderQty'],
+                         'price': desired_order['price'], 'side': order['side']})
             except IndexError:
                 # Will throw if there isn't a desired order to match. In that case, cancel it.
                 to_cancel.append(order)
@@ -520,6 +524,11 @@ class OrderManager:
         sys.exit()
 
     def run_loop(self):
+        df = pd.DataFrame()
+        tick_data = []
+        window = 90  # 15m
+        EMA_FAST = 34
+        EMA_SLOW = 89
         while True:
             sys.stdout.write("-----\n")
             sys.stdout.flush()
@@ -532,7 +541,19 @@ class OrderManager:
             if not self.check_connection():
                 logger.error("Realtime data connection unexpectedly closed, restarting.")
                 self.restart()
-            self.fetch_ticker()
+            # Fetch ticker realtime
+            ticker = self.fetch_ticker()
+            tick_data.append(ticker)
+            temp_df = pd.DataFrame([ticker])
+            df = df.append(temp_df)
+            # run strategy
+            self.strategy.ema_cross(df)
+            if len(tick_data) == window:
+                logger.info("Save to file...")
+                tick_data = []
+                # df.set_index('timestamp', drop=False, inplace=True)
+                df.to_csv("ticker-data.csv", index=False)
+
             # self.sanity_check()  # Ensures health of mm - several cut-out points here
             # self.print_status()  # Print skew, delta, etc
             # self.place_orders()  # Creates desired orders and converges to existing orders
@@ -540,6 +561,7 @@ class OrderManager:
     def restart(self):
         logger.info("Restarting the market maker...")
         os.execv(sys.executable, [sys.executable] + sys.argv)
+
 
 #
 # Helpers

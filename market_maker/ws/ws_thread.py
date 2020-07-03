@@ -87,6 +87,7 @@ class BitMEXWebsocket():
         '''Return a ticker object. Generated from instrument.'''
 
         instrument = self.get_instrument(symbol)
+        timestamp = instrument['timestamp']
 
         # If this is an index, we have to get the data from the last trade.
         if instrument['symbol'][0] == '.':
@@ -102,9 +103,10 @@ class BitMEXWebsocket():
                 "sell": ask,
                 "mid": (bid + ask) / 2
             }
-
+        tick = {k: toNearest(float(v or 0), instrument['tickSize']) for k, v in iteritems(ticker)}
+        tick["timestamp"] = timestamp
         # The instrument has a tickSize. Use it to round values.
-        return {k: toNearest(float(v or 0), instrument['tickSize']) for k, v in iteritems(ticker)}
+        return tick
 
     def funds(self):
         return self.data['margin'][0]
