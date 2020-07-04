@@ -21,7 +21,6 @@ class StrategyManager:
         self.stop_long_condition = False
         self.stop_short_condition = False
         self.bot = Lucy()
-        self.bot.run()
 
     def ema_cross(self, data, candle=90):
         EMA_SLOW = 258 * candle
