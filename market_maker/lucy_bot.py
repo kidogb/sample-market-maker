@@ -14,7 +14,7 @@ class Lucy:
         self.dispatcher = self.updater.dispatcher
         start_handler = CommandHandler('start', self.start)
         price_handler = CommandHandler('price', self.price)
-        advice_handler = CommandHandler('advice', self.advice())
+        advice_handler = CommandHandler('advice', self.advice)
         self.dispatcher.add_handler(start_handler)
         self.dispatcher.add_handler(price_handler)
         self.dispatcher.add_handler(advice_handler)
