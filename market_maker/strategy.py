@@ -42,6 +42,7 @@ class StrategyManager:
         RSI_HIGH = 64.73199279543923
         last_data = data.iloc[-1]
         price = last_data['mid']
+        self.bot.curr_price = price
 
         ema_slow = talib.EMA(data['mid'], timeperiod=EMA_SLOW)
         ema_fast = talib.EMA(data['mid'], timeperiod=EMA_FAST)
@@ -69,9 +70,9 @@ class StrategyManager:
                 logger.info("Start Long: %s", price)
                 long_str = "--------------------------------------\n{time}: #{id}\nOpen long order: {entry}, " \
                            "lev: x50-100".format(id=len(self.orders_history) + 1,
-                                                      time=datetime.strptime(self.round_trip['start'],
-                                                                             '%Y-%m-%dT%H:%M:%S.%fZ').strftime(
-                                                          "%b %d %Y %H:%M:%S"), entry=self.round_trip['entry'])
+                                                 time=datetime.strptime(self.round_trip['start'],
+                                                                        '%Y-%m-%dT%H:%M:%S.%fZ').strftime(
+                                                     "%b %d %Y %H:%M:%S"), entry=self.round_trip['entry'])
                 self.bot.send(long_str)
 
             if self.in_position:
@@ -106,13 +107,15 @@ class StrategyManager:
                 profit = 100 * (price - self.round_trip['entry']) / self.round_trip['entry']
                 self.round_trip['profit'] = profit
                 self.round_trip['type'] = order_type
-                exit_long_str = "{time}: \n{type} long order #1 with: {exit}.\nProfit: {profit}" \
+                exit_long_str = "{time}: \n{type} long order #{id} at: {exit}.\nProfit: {profit}" \
                                 "\nDrawdown: {dd}. Run up: {ru} \n--------------------------------------\n\n".format(
+                    id=len(self.orders_history) + 1,
                     time=datetime.strptime(self.round_trip['start'], '%Y-%m-%dT%H:%M:%S.%fZ').strftime(
                         "%b %d %Y %H:%M:%S"), exit=self.round_trip['exit'], type=self.round_trip['type'].upper(),
                     profit=self.round_trip['profit'], dd=self.round_trip['dd'], ru=self.round_trip['run_up'])
                 self.bot.send(exit_long_str)
                 self.orders_history.append(self.round_trip)
+                self.bot.orders_history = self.orders_history
                 pd.DataFrame(self.orders_history).to_csv("xbtusd-orders-history.csv", index=False)
                 # reset
                 self.round_trip = {}

@@ -12,35 +12,36 @@ class Lucy:
         self.lucy_bot = Bot(token="1375720857:AAG7QlWP9eRTnWriPFUBambTrApKXuxcG_E")
         self.updater = Updater(token="1375720857:AAG7QlWP9eRTnWriPFUBambTrApKXuxcG_E", use_context=True)
         self.dispatcher = self.updater.dispatcher
-        start_handler = CommandHandler('start', Lucy.start)
-        echo_handler = MessageHandler(Filters.text & (~Filters.command), Lucy.echo)
-        caps_handler = CommandHandler('caps', Lucy.caps)
+        start_handler = CommandHandler('start', self.start)
+        price_handler = CommandHandler('price', self.price)
+        advice_handler = CommandHandler('advice', self.advice())
         self.dispatcher.add_handler(start_handler)
-        self.dispatcher.add_handler(echo_handler)
-        self.dispatcher.add_handler(caps_handler)
+        self.dispatcher.add_handler(price_handler)
+        self.dispatcher.add_handler(advice_handler)
 
-    @staticmethod
-    def start(updater, context):
-        context.bot.send_message(chat_id=updater.effective_chat.id, text="I'm a bot, please talk to me!")
+        self.curr_price = None
+        self.orders_history = []
 
-    @staticmethod
-    def echo(updater, context):
-        context.bot.send_message(chat_id=updater.effective_chat.id, text=updater.message.text)
+    def start(self, context):
+        context.bot.send_message(chat_id=self.updater.effective_chat.id, text="Good things will come!")
 
-    @staticmethod
-    def caps(updater, context):
-        text_caps = ' '.join(context.args).upper()
-        context.bot.send_message(chat_id=updater.effective_chat.id, text=text_caps)
+    def advice(self, context):
+        # self.orders_history
+        # context.bot.send_message(chat_id=self.updater.effective_chat.id, text=self.updater.message.text)
+        pass
+
+    def price(self, context):
+        current_price = self.curr_price
+        context.bot.send_message(chat_id=self.updater.effective_chat.id,
+                                 text="Current price is: {price}".format(price=current_price))
 
     def send(self, msg):
-            """
-            Send a mensage to a telegram user specified on chatId
-            chat_id must be a number!
-            """
-            self.lucy_bot.send_message(546616705, text=msg)
+        """
+        Send a mensage to a telegram user specified on chatId
+        chat_id must be a number!
+        """
+        self.lucy_bot.send_message(546616705, text=msg)
 
     def run(self):
         self.updater.start_polling()
         self.updater.idle()
-
-
