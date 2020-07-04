@@ -21,25 +21,26 @@ class StrategyManager:
         self.stop_long_condition = False
         self.stop_short_condition = False
         self.bot = Lucy()
+        self.bot.run()
 
-    def ema_cross(self, data, candle=1):
-        # EMA_SLOW = 258 * candle
-        # EMA_FAST = 175 * candle
-        # DD = 0.7625952582816842
-        # TP = 0.8560976329922
-        # TRAILING = 0.10114088761330153
-        # RSI = 11 * candle
-        # RSI_LOW = 27.559218467340816
-        # RSI_HIGH = 64.73199279543923
-
-        EMA_SLOW = 3 * candle
-        EMA_FAST = 2 * candle
+    def ema_cross(self, data, candle=90):
+        EMA_SLOW = 258 * candle
+        EMA_FAST = 175 * candle
         DD = 0.7625952582816842
         TP = 0.8560976329922
         TRAILING = 0.10114088761330153
-        RSI = 2 * candle
-        RSI_LOW = 27.559218467340816
-        RSI_HIGH = 64.73199279543923
+        RSI = 10 * candle
+        RSI_LOW = 54.89825885458724
+        RSI_HIGH = 64.97392476489256
+
+        # EMA_SLOW = 3 * candle
+        # EMA_FAST = 2 * candle
+        # DD = 0.7625952582816842
+        # TP = 0.8560976329922
+        # TRAILING = 0.10114088761330153
+        # RSI = 2 * candle
+        # RSI_LOW = 27.559218467340816
+        # RSI_HIGH = 64.73199279543923
         last_data = data.iloc[-1]
         price = last_data['mid']
         self.bot.curr_price = price
