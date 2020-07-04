@@ -79,7 +79,10 @@ class StrategyManager:
                 self.round_trip['run_up'] = max(price, self.round_trip['run_up'])
                 self.round_trip['dd'] = min(price, self.round_trip['dd'])
                 # calculate stop price
-                prev_stop_price = self.round_trip['stop']
+                if "stop" in self.round_trip:
+                    prev_stop_price = self.round_trip['stop']
+                else:
+                    prev_stop_price = None
                 self.round_trip['stop'] = self.round_trip['entry'] * (1 - DD / 100)
                 tp = self.round_trip['entry'] * (1 + TP / 100)
                 if price >= tp:
